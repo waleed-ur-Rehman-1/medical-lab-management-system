@@ -1,0 +1,25 @@
+# Env files
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Builds
+client/dist/
+desktop/release/
+desktop/node_modules/
+
+# Backups
+backups/
+*.archive.gz
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
