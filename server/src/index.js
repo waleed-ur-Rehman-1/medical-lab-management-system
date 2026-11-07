@@ -84,6 +84,22 @@ app.get('/api/health', (_req, res) =>
   res.json({ ok: true, service: 'MLMIS', time: new Date().toISOString() })
 );
 
+app.get('/api/debug-cors', (req, res) => {
+  const origin = req.headers.origin || 'none';
+  res.json({
+    yourOrigin: origin,
+    allowed: isAllowedOrigin(req.headers.origin),
+    regexMatch: /^https:\/\/medical-lab-management-system[\w-]*\.vercel\.app$/i.test(origin),
+    envClientOrigin: process.env.CLIENT_ORIGIN || 'unset',
+    codeVersion: 'v2-with-debug',
+    deployment: {
+      nodeEnv: process.env.NODE_ENV,
+      hasJwt: !!process.env.JWT_SECRET,
+      hasMongoUri: !!process.env.MONGO_URI
+    }
+  });
+});
+
 // ─────────────────────────────────────────────────────────────
 // Routes
 // ─────────────────────────────────────────────────────────────
