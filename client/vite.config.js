@@ -7,7 +7,7 @@ export default defineConfig({
   base: './',
   server: {
     port: 5173,
-    proxy: { '/api': { target: 'http://localhost:5000', changeOrigin: true } }
+    proxy: { '/api': { target: 'http://localhost:5000' && 'https://medical-lab-management-system.onrender.com/', changeOrigin: true } }
   },
   build: {
     outDir: 'dist',

@@ -5,3 +5,9 @@ MR-2026-493681              03226598151
 
 
 MR-2026-790959              03265987412
+
+
+mlmis_user              SWiq6dFEVGtklVRQ
+
+
+mongodb+srv://mlmis_user:SWiq6dFEVGtklVRQ@specforge-plantuml.0zvsj2c.mongodb.net/?compressors=zlib
