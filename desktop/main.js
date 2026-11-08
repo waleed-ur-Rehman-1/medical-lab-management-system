@@ -3,14 +3,13 @@ const path = require('path');
 
 const isDev = !!process.env.ELECTRON_START_URL;
 
-// Where the packaged React build lives:
-//   dev:  ../client/dist/index.html   (relative to desktop/)
-//   prod: resources/app/index.html    (copied by electron-builder extraResources)
 function resolveIndexHtml() {
-  if (isDev) return null; // dev loads the Vite URL instead
-  // In packaged app: process.resourcesPath/app/index.html
-  if (app.isPackaged) return path.join(process.resourcesPath, 'app', 'index.html');
-  // Unpackaged but built: fall back to sibling client/dist
+  if (isDev) return null;
+  if (app.isPackaged) {
+    // Standard electron-builder path for extraResources
+    return path.join(process.resourcesPath, 'app', 'index.html');
+  }
+  // Fallback for local testing
   return path.join(__dirname, '..', 'client', 'dist', 'index.html');
 }
 
@@ -23,7 +22,6 @@ function createWindow() {
     show: false,
     backgroundColor: '#f4f6f9',
     title: 'MLMIS Admin',
-    icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -42,25 +40,25 @@ function createWindow() {
       console.error('Failed to load index.html:', err);
       win.loadURL(
         'data:text/html,<h1 style="font-family:sans-serif;padding:40px;color:#b91c1c">' +
-        'App files missing.<br>Run <code>npm run build:client</code> before packaging.</h1>'
+        'App files missing.<br>Make sure you ran: <br><code>$env:BUILD_TARGET="electron"; npm run build</code> in the client folder.</h1>'
       );
     });
+    
+    // 👇 FORCE CONSOLE TO OPEN IN PRODUCTION SO WE CAN SEE THE ERROR 👇
+    win.webContents.openDevTools(); 
   }
 
-  // Open external links (e.g. WhatsApp web links) in system browser
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) { shell.openExternal(url); return { action: 'deny' }; }
     return { action: 'allow' };
   });
 
-  // Prevent navigating away from the app shell
   win.webContents.on('will-navigate', (e, url) => {
     if (!isDev && !url.startsWith('file://')) e.preventDefault();
   });
 }
 
 app.whenReady().then(() => {
-  // Minimal app menu — remove default menu in production
   if (!isDev) Menu.setApplicationMenu(null);
   createWindow();
 

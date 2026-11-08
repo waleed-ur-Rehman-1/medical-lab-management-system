@@ -34,7 +34,6 @@ export default function PrintResult() {
       </div>
 
       <div className="print-sheet">
-        {/* ─── HEADER ─── */}
         <header className="sheet-header">
           <div className="lab-brand">
             <div className="lab-logo">🧪</div>
@@ -47,7 +46,6 @@ export default function PrintResult() {
             <p>{LAB.addressLine1}</p>
             <p>{LAB.addressLine2}</p>
             <p>📞 {LAB.phone} · 📱 {LAB.mobile}</p>
-            <p>✉️ {LAB.email} · 🌐 {LAB.website}</p>
           </div>
         </header>
 
@@ -57,12 +55,10 @@ export default function PrintResult() {
           <h2>LABORATORY REPORT</h2>
           <div className="invoice-meta">
             <p><strong>Report #:</strong> RPT-{r._id.slice(-6).toUpperCase()}</p>
-            <p><strong>Order #:</strong> {r.order?.orderNumber}</p>
             <p><strong>Date:</strong> {new Date(r.verifiedAt || r.createdAt).toLocaleString()}</p>
           </div>
         </div>
 
-        {/* ─── PATIENT ─── */}
         <section className="sheet-section">
           <h3>Patient Information</h3>
           <div className="info-grid">
@@ -70,14 +66,11 @@ export default function PrintResult() {
             <div><span className="k">Full Name</span><span className="v">{r.patient?.fullName}</span></div>
             <div><span className="k">Gender</span><span className="v">{r.patient?.gender}</span></div>
             <div><span className="k">Age</span><span className="v">{r.patient?.age ?? '—'}</span></div>
-            <div><span className="k">Contact</span><span className="v">{r.patient?.contactNumber}</span></div>
-            <div><span className="k">Sample Type</span><span className="v">{r.order?.sampleType || 'Blood'}</span></div>
           </div>
         </section>
 
-        {/* ─── TEST ─── */}
         <section className="sheet-section">
-          <h3>Test: {r.test?.testName} <span className="muted">({r.test?.testCode})</span></h3>
+          <h3>Test: {r.test?.testName}</h3>
           <table className="sheet-table result-table">
             <thead>
               <tr>
@@ -91,9 +84,12 @@ export default function PrintResult() {
             <tbody>
               {r.values.map((v, i) => (
                 <tr key={i}>
+                  {/* Display the parameterName saved in DB */}
                   <td>{v.parameterName}</td>
                   <td style={{ textAlign: 'center', fontWeight: 600 }}>{v.value || '—'}</td>
+                  {/* Display Unit */}
                   <td style={{ textAlign: 'center' }}>{v.unit || ''}</td>
+                  {/* Display Reference Range */}
                   <td style={{ textAlign: 'center' }}>{v.referenceRange || ''}</td>
                   <td style={{ textAlign: 'center' }}>
                     {v.flag === 'low' && <span className="flag flag-low">L</span>}
@@ -105,23 +101,8 @@ export default function PrintResult() {
               ))}
             </tbody>
           </table>
-          <p className="muted small mt-8">
-            <strong>Legend:</strong> L = Below reference range · H = Above reference range · A = Abnormal · — = Within range
-          </p>
         </section>
 
-        {/* ─── VERIFICATION ─── */}
-        <section className="sheet-section">
-          <h3>Verification</h3>
-          <div className="info-grid">
-            <div><span className="k">Entered By</span><span className="v">{r.enteredBy?.name || '—'}</span></div>
-            <div><span className="k">Verified By</span><span className="v">{r.verifiedBy?.name || '—'}</span></div>
-            <div><span className="k">Verified At</span><span className="v">{r.verifiedAt ? new Date(r.verifiedAt).toLocaleString() : '—'}</span></div>
-            <div><span className="k">Revision</span><span className="v">v{r.revision}</span></div>
-          </div>
-        </section>
-
-        {/* ─── FOOTER ─── */}
         <footer className="sheet-footer">
           <div className="signature-row">
             <div className="sig-box">
@@ -129,13 +110,8 @@ export default function PrintResult() {
               <span className="sig-label">{r.verifiedBy?.name || 'Authorized Verifier'}</span>
               <span className="sig-sub">Verified By</span>
             </div>
-            <div className="sig-box">
-              <span className="sig-line" />
-              <span className="sig-label">Laboratory Stamp</span>
-            </div>
           </div>
           <p className="disclaimer">{LAB.disclaimer}</p>
-          <p className="muted small">{LAB.name} · {LAB.regNumber} · {LAB.phone}</p>
         </footer>
       </div>
     </div>

@@ -1,26 +1,17 @@
 {
   "name": "mlmis-desktop",
   "version": "1.0.0",
-  "description": "MLMIS — Medical Laboratory Management & Information System (Admin)",
+  "description": "MLMIS Medical Laboratory Desktop App",
   "main": "main.js",
-  "author": "Your Lab",
-  "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "dev": "cross-env ELECTRON_START_URL=http://localhost:5173 electron .",
-    "build:client": "cd ../client && npm run build",
-    "prebuild": "npm run build:client",
-    "dist": "electron-builder --win",
-    "dist:portable": "electron-builder --win portable",
-    "dist:dir": "electron-builder --win --dir"
+    "dist": "electron-builder --win"
   },
   "build": {
     "appId": "com.mlmis.desktop",
     "productName": "MLMIS Admin",
-    "copyright": "© 2026 MLMIS",
     "directories": {
-      "output": "release",
-      "buildResources": "build"
+      "output": "release"
     },
     "files": [
       "main.js",
@@ -37,21 +28,17 @@
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] }
-      ],
-      "icon": "build/icon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "MLMIS Admin",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico"
+      "shortcutName": "MLMIS Admin"
     }
   },
   "devDependencies": {
-    "cross-env": "^7.0.3",
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3"
   }

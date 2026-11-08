@@ -21,6 +21,7 @@ import PrintResult from './pages/PrintResult.jsx';
 import FinanceDashboard from './pages/FinanceDashboard.jsx';
 import AdminUsers from './pages/AdminUsers.jsx';
 import AuditLogs from './pages/AuditLogs.jsx';
+import MyProfile from './pages/MyProfile.jsx';
 import WhatsAppLog from './pages/WhatsAppLog.jsx';
 
 function Protected({ children }) {
@@ -108,6 +109,11 @@ export default function App() {
           <PatientLinkGuard><RoleGuard roles={['patient']}><MyInvoices /></RoleGuard></PatientLinkGuard>
         } />
       </Route>
+       <Route path="my/profile" element={
+          <PatientLinkGuard>
+            <RoleGuard roles={['patient']}><MyProfile /></RoleGuard>
+          </PatientLinkGuard>
+        } />
 
       <Route path="*" element={<Navigate to={user?.role === 'patient' ? '/my/results' : '/'} replace />} />
     </Routes>

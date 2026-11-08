@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios.js';
+import { useAuth } from '../context/AuthContext.jsx'; // <-- ADDED
 
 const CATEGORIES = ['Salaries','Rent','Electricity','Internet','Lab Supplies','Maintenance','Transport','Other'];
 
 export default function FinanceDashboard() {
+  const { user } = useAuth(); // <-- ADDED
   const [summary, setSummary] = useState({});
   const [expenses, setExpenses] = useState([]);
   const [form, setForm] = useState({ category: 'Rent', amount: '', note: '' });
@@ -37,6 +39,18 @@ export default function FinanceDashboard() {
       load();
     } catch (e) {
       setErr(e.response?.data?.message || 'Failed to add expense');
+    }
+  }
+
+  // <-- ADDED DELETE FUNCTION
+  async function handleDelete(id) {
+    if (!window.confirm('Are you sure you want to delete this expense?')) return;
+    
+    try {
+      await api.delete(`/finance/expenses/${id}`);
+      load(); // Refresh data
+    } catch (e) {
+      alert(e.response?.data?.message || 'Failed to delete expense');
     }
   }
 
@@ -85,22 +99,48 @@ export default function FinanceDashboard() {
       <div className="card">
         <h3>Expense History</h3>
         {expenses.length === 0 && <p>No expenses recorded yet.</p>}
-        <table>
-          <thead>
-            <tr><th>Date</th><th>Category</th><th>Amount</th><th>Note</th><th>Recorded By</th></tr>
-          </thead>
-          <tbody>
-            {expenses.map(x => (
-              <tr key={x._id}>
-                <td>{new Date(x.date).toLocaleDateString()}</td>
-                <td>{x.category}</td>
-                <td>{money(x.amount)}</td>
-                <td>{x.note || '—'}</td>
-                <td>{x.recordedBy?.name || '—'}</td>
+        
+        {expenses.length > 0 && (
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Note</th>
+                <th>Recorded By</th>
+                {/* ADDED ACTIONS COLUMN */}
+                <th>Actions</th> 
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {expenses.map(x => (
+                <tr key={x._id}>
+                  <td>{new Date(x.date).toLocaleDateString()}</td>
+                  <td>{x.category}</td>
+                  <td>{money(x.amount)}</td>
+                  <td>{x.note || '—'}</td>
+                  <td>{x.recordedBy?.name || '—'}</td>
+                  
+                  {/* ADDED DELETE BUTTON */}
+                  <td>
+                    {user?.role === 'admin' ? (
+                      <button 
+                        onClick={() => handleDelete(x._id)}
+                        style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: 0, fontWeight: 'bold' }}
+                        title="Delete Expense"
+                      >
+                        🗑️ Delete
+                      </button>
+                    ) : (
+                      <span className="muted" style={{ fontSize: 12 }}>—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

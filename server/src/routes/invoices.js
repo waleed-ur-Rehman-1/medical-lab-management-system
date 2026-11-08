@@ -23,23 +23,17 @@ router.get("/me", protect, async (req, res, next) => {
 });
 
 // NEW â€” patient's own payments (must be BEFORE `/:id`)
-router.get("/me/payments", protect, async (req, res, next) => {
-  try {
-    if (req.user.role !== "patient")
-      return res.status(400).json({ message: "Only for patient accounts" });
-    if (!req.user.patientProfile) return res.json([]);
+router.get('/', protect, authorize('admin', 'receptionist', 'accountant'),
+  async (req, res, next) => {
+    try {
+      const filter = {};
+      if (req.query.patient) filter.patient = req.query.patient;
 
-    const invoiceIds = await Invoice.find({
-      patient: req.user.patientProfile,
-    }).distinct("_id");
-    const payments = await Payment.find({ invoice: { $in: invoiceIds } })
-      .populate("invoice", "invoiceNumber")
-      .sort({ createdAt: -1 });
-    res.json(payments);
-  } catch (err) {
-    next(err);
-  }
-});
+      res.json(await Invoice.find(filter)
+        .populate('patient', 'mrNumber fullName')
+        .sort({ createdAt: -1 }).limit(200));
+    } catch (err) { next(err); }
+  });
 
 router.get(
   "/",
@@ -164,6 +158,30 @@ if (io) {
     }
   },
 );
+
+// DELETE an invoice (Admin only)
+router.delete('/:id', protect, authorize('admin'), async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+    // Safety Check: Do not allow deleting a bill if money was already collected
+    if (invoice.paid > 0) {
+      return res.status(400).json({ 
+        message: `Cannot delete: This bill already has PKR ${invoice.paid} in payments. You must process a refund first or mark it as cancelled.` 
+      });
+    }
+
+    // Delete the invoice
+    await Invoice.findByIdAndDelete(req.params.id);
+    
+    // Also clean up the associated test orders if they haven't been processed
+    // (Optional but keeps database clean)
+    // await Order.deleteMany({ visit: invoice.visit });
+
+    res.json({ message: 'Invoice deleted successfully' });
+  } catch (err) { next(err); }
+});
 
 
 

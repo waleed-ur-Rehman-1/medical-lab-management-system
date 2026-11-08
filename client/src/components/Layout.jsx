@@ -49,6 +49,7 @@ export default function Layout() {
   const patientLinks = [
     { to: '/',              label: 'Dashboard',   roles: ['patient'] },
     { to: '/my/results',    label: 'My Results',  roles: ['patient'] },
+      { to: '/my/profile',    label: 'My Profile',  roles: ['patient'] }, // <-- ADD THIS
     { to: '/my/invoices',   label: 'My Invoices', roles: ['patient'] }
   ];
 

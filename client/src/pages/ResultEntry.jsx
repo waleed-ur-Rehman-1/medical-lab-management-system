@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/axios.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function ResultEntry() {
+  const { user } = useAuth();
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [values, setValues] = useState({});
@@ -33,13 +35,18 @@ export default function ResultEntry() {
 
   useEffect(() => { refresh(); }, [orderId]);
 
+  // Helper to build the exact payload
+  const buildPayload = () => ({
+    values: Object.entries(values).map(([parameterId, value]) => ({ 
+      parameterId, 
+      value: String(value || '') 
+    }))
+  });
+
   async function save() {
     setErr(''); setMsg(''); setBusy(true);
     try {
-      const payload = {
-        values: Object.entries(values).map(([parameterId, value]) => ({ parameterId, value }))
-      };
-      const r = (await api.post(`/results/order/${orderId}`, payload)).data;
+      const r = (await api.post(`/results/order/${orderId}`, buildPayload())).data;
       setResult(r);
       setMsg('Draft saved');
       return r;
@@ -52,41 +59,51 @@ export default function ResultEntry() {
   }
 
   async function submit() {
-    const saved = await save();
-    if (!saved) return;
-    setBusy(true);
+    setBusy(true); setErr(''); setMsg('');
     try {
+      // 1. Force save the current inputs first
+      const saved = (await api.post(`/results/order/${orderId}`, buildPayload())).data;
+      
+      // 2. Then submit to verification (URL is correct: /submit)
       const r = (await api.post(`/results/${saved._id}/submit`)).data;
       setResult(r);
       setMsg('Submitted for verification');
-      await refresh();
-    } catch (e) { setErr(e.response?.data?.message || 'Failed'); }
-    finally { setBusy(false); }
+    } catch (e) {
+      setErr(e.response?.data?.message || 'Failed to submit');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function approve() {
-    if (!result) return setErr('Save a draft first');
-    if (result.status === 'approved') return;
-    setBusy(true);
+    setBusy(true); setErr(''); setMsg('');
     try {
-      const r = (await api.post(`/results/${result._id}/approve`)).data;
+      // 1. Force save the current inputs one last time
+      const saved = (await api.post(`/results/order/${orderId}`, buildPayload())).data;
+      
+      // 2. Then approve
+      const r = (await api.post(`/results/${saved._id}/approve`)).data;
       setResult(r);
-      setMsg('Approved');
+      setMsg('Approved successfully');
+      
+      // Refresh to lock inputs since it is now approved
       await refresh();
-    } catch (e) { setErr(e.response?.data?.message || 'Failed'); }
-    finally { setBusy(false); }
+    } catch (e) {
+      setErr(e.response?.data?.message || 'Failed to approve');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function reject() {
     if (!result) return setErr('Save a draft first');
-    if (result.status === 'approved') return setErr('Approved results cannot be rejected');
-    const reason = prompt('Rejection reason');
+    const reason = prompt('Reason for reopening/rejecting:');
     if (!reason) return;
     setBusy(true);
     try {
       const r = (await api.post(`/results/${result._id}/reject`, { reason })).data;
       setResult(r);
-      setMsg('Rejected');
+      setMsg('Result reopened for editing');
       await refresh();
     } catch (e) { setErr(e.response?.data?.message || 'Failed'); }
     finally { setBusy(false); }
@@ -125,12 +142,7 @@ export default function ResultEntry() {
         <h1>Result Entry</h1>
         {isApproved && result && (
           <div style={{ display: 'flex', gap: 8 }}>
-            <Link
-              to={`/print/result/${result._id}`}
-              target="_blank"
-              rel="noopener"
-              className="btn"
-            >
+            <Link to={`/print/result/${result._id}`} target="_blank" rel="noopener" className="btn">
               🖨️ Print Report
             </Link>
             <button onClick={sendWhatsApp} disabled={busy} className="btn-wa">
@@ -141,11 +153,7 @@ export default function ResultEntry() {
       </div>
 
       <p>
-        <strong>Order:</strong> {order.orderNumber}
-        {' · '}
-        <strong>Patient:</strong> {order.patient?.fullName} ({order.patient?.mrNumber})
-        {' · '}
-        <strong>Test:</strong> {testName}
+        <strong>Order:</strong> {order.orderNumber} · <strong>Patient:</strong> {order.patient?.fullName} ({order.patient?.mrNumber}) · <strong>Test:</strong> {testName}
       </p>
 
       {err && <p className="error">{err}</p>}
@@ -153,23 +161,24 @@ export default function ResultEntry() {
 
       {result?.status === 'rejected' && result.rejectionReason && (
         <div className="card" style={{ borderColor: '#dc2626', background: '#fef2f2' }}>
-          <strong>Rejected:</strong> {result.rejectionReason}
+          <strong>Reopened:</strong> {result.rejectionReason}
         </div>
       )}
 
       {result && (
-        <div className="card" style={{ padding: '8px 16px' }}>
+        <div className="card" style={{ padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p style={{ margin: 0 }}>
-            <strong>Status:</strong>{' '}
-            <span style={{ textTransform: 'uppercase', fontWeight: 700 }}>
-              {result.status.replace('_', ' ')}
-            </span>
+            <strong>Status:</strong> <span style={{ textTransform: 'uppercase', fontWeight: 700 }}>{result.status.replace('_', ' ')}</span>
             {' · '}
             <strong>Revision:</strong> v{result.revision}
-            {result.verifiedAt && (
-              <> {' · '} <strong>Verified:</strong> {new Date(result.verifiedAt).toLocaleString()}</>
-            )}
+            {result.verifiedAt && (<> {' · '} <strong>Verified:</strong> {new Date(result.verifiedAt).toLocaleString()}</>)}
           </p>
+          
+          {isApproved && user.role === 'admin' && (
+            <button onClick={reject} disabled={busy} className="danger" style={{ padding: '4px 12px', fontSize: 12 }}>
+              🔓 Unlock / Edit
+            </button>
+          )}
         </div>
       )}
 
@@ -191,9 +200,7 @@ export default function ResultEntry() {
                   <input
                     value={values[p._id] || ''}
                     readOnly={!isEditable}
-                    onChange={(e) =>
-                      setValues((v) => ({ ...v, [p._id]: e.target.value }))
-                    }
+                    onChange={(e) => setValues((v) => ({ ...v, [p._id]: e.target.value }))}
                   />
                 </td>
                 <td>{p.unit}</td>
@@ -220,17 +227,8 @@ export default function ResultEntry() {
           )}
           {isApproved && result && (
             <>
-              <Link
-                to={`/print/result/${result._id}`}
-                target="_blank"
-                rel="noopener"
-                className="btn"
-              >
-                🖨️ Print Report
-              </Link>
-              <button onClick={sendWhatsApp} disabled={busy} className="btn-wa">
-                📱 Send via WhatsApp
-              </button>
+              <Link to={`/print/result/${result._id}`} target="_blank" rel="noopener" className="btn">🖨️ Print Report</Link>
+              <button onClick={sendWhatsApp} disabled={busy} className="btn-wa">📱 Send via WhatsApp</button>
             </>
           )}
         </div>
